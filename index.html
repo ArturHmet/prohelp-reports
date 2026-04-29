@@ -86,7 +86,7 @@
             </tr>
           </thead>
           <tbody id="reports-body">
-            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500 text-sm">Loading reports…</td></tr>
+            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500 text-sm">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -105,40 +105,27 @@
     </div>
   </main>
   <script>
-    const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
-    const SHEET_NAME = 'Reports';
-    const API_KEY = 'YOUR_GOOGLE_API_KEY_HERE';
+    const REPORTS_URL = 'https://raw.githubusercontent.com/ArturHmet/prohelp-reports/main/data/reports.json';
     let allReports = [];
     let currentTab = 'all';
-    const statusColors = { 'completed': 'badge-green', 'done': 'badge-green', 'in_progress': 'badge-blue', 'in progress': 'badge-blue', 'pending': 'badge-yellow', 'blocked': 'badge-red', 'failed': 'badge-red' };
-    const priorityColors = { 'critical': 'badge-red', 'high': 'badge-yellow', 'medium': 'badge-blue', 'low': 'badge-gray' };
+    const statusColors = { 'completed':'badge-green','done':'badge-green','in_progress':'badge-blue','in progress':'badge-blue','pending':'badge-yellow','blocked':'badge-red','failed':'badge-red' };
+    const priorityColors = { 'critical':'badge-red','high':'badge-yellow','medium':'badge-blue','low':'badge-gray' };
+
     async function loadReports() {
       document.getElementById('last-updated').textContent = 'Updating…';
       try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Sheet not found');
-        const data = await res.json();
-        const rows = data.values || [];
-        if (rows.length < 2) { showEmpty(); return; }
-        const headers = rows[0].map(h => h.toLowerCase().trim());
-        allReports = rows.slice(1).map(row => { const obj = {}; headers.forEach((h, i) => obj[h] = row[i] || ''); return obj; }).reverse();
-        renderReports(allReports); updateKPIs(allReports);
+        const res = await fetch(REPORTS_URL + '?t=' + Date.now());
+        if (!res.ok) throw new Error('not found');
+        allReports = await res.json();
+        renderReports(allReports);
+        updateKPIs(allReports);
         document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
-      } catch (e) {
-        showDemoData();
-        document.getElementById('last-updated').textContent = 'Demo mode';
+      } catch(e) {
+        document.getElementById('reports-body').innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-yellow-400 text-sm">⚠️ Waiting for first agent report…</td></tr>';
+        document.getElementById('last-updated').textContent = 'No data yet';
       }
     }
-    function showDemoData() {
-      allReports = [
-        { timestamp: new Date().toISOString(), agent: 'CEO', title: 'Sprint-001 closed successfully', summary: 'All 4 directives executed. Brand: ProHelp confirmed.', status: 'completed', priority: 'high', details: 'Sprint-001 cycle complete. COO brief filed. sprint-008 gated to 50-provider milestone.' },
-        { timestamp: new Date(Date.now()-3600000).toISOString(), agent: 'CMO', title: 'Marketing strategy for prohelp.work', summary: 'SEO audit started. Landing page copy drafted.', status: 'in_progress', priority: 'high', details: 'Keyword research complete. Competitor analysis done.' },
-        { timestamp: new Date(Date.now()-7200000).toISOString(), agent: 'CTO', title: 'Tech stack selection complete', summary: 'Recommended: Next.js + Supabase + Stripe.', status: 'completed', priority: 'critical', details: 'Full open-source stack. MVP timeline: 3 weeks.' },
-        { timestamp: new Date(Date.now()-10800000).toISOString(), agent: 'COO', title: 'Onboarding framework ready', summary: 'Provider onboarding SOP created.', status: 'pending', priority: 'medium', details: 'Pending COO assignment on May 1.' },
-      ];
-      renderReports(allReports); updateKPIs(allReports);
-    }
+
     function renderReports(reports) {
       const body = document.getElementById('reports-body');
       const filtered = currentTab === 'all' ? reports : reports.filter(r => r.agent?.toLowerCase() === currentTab);
@@ -158,20 +145,19 @@
         </tr>`;
       }).join('');
     }
+
     function openDrawer(i) {
       const reports = currentTab==='all'?allReports:allReports.filter(r=>r.agent?.toLowerCase()===currentTab);
       const r = reports[i]; if(!r) return;
       const sc = statusColors[r.status?.toLowerCase()]||'badge-gray';
-      document.getElementById('drawer-content').innerHTML = `<div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center text-sm font-bold text-blue-300">${(r.agent||'?')[0]}</div><div><div class="font-semibold text-slate-200">${r.agent||'—'}</div><div class="text-xs text-slate-500">${r.timestamp?new Date(r.timestamp).toLocaleString():''}</div></div></div><h2 class="text-xl font-bold text-white mb-3">${r.title||'—'}</h2><div class="flex gap-2 mb-5"><span class="badge ${sc}">${r.status||'—'}</span><span class="badge ${priorityColors[r.priority?.toLowerCase()]||'badge-gray'}">${r.priority||'—'}</span></div><div class="text-slate-300 text-sm leading-relaxed mb-6">${r.summary||''}</div>${r.details?`<div class="card p-4 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">${r.details}</div>`:''}`;
+      document.getElementById('drawer-content').innerHTML = `<div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center text-sm font-bold text-blue-300">${(r.agent||'?')[0]}</div><div><div class="font-semibold text-slate-200">${r.agent||'—'}</div><div class="text-xs text-slate-500">${r.timestamp?new Date(r.timestamp).toLocaleString():''}</div></div></div><h2 class="text-xl font-bold text-white mb-3">${r.title||'—'}</h2><div class="flex gap-2 mb-5"><span class="badge ${sc}">${r.status||'—'}</span><span class="badge ${priorityColors[r.priority?.toLowerCase()]||'badge-gray'}">${r.priority||'—'}</span></div><div class="text-slate-300 text-sm leading-relaxed mb-6">${r.summary||''}</div>${r.details?`<div class="card p-4 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">${r.details}</div>`:''}` ;
       document.getElementById('detail-drawer').classList.remove('hidden');
     }
     function closeDrawer(e) { if(!e||e.target===document.getElementById('detail-drawer')) document.getElementById('detail-drawer').classList.add('hidden'); }
     function updateKPIs(reports) {
       const today = new Date().toDateString();
-      const tr = reports.filter(r=>r.timestamp&&new Date(r.timestamp).toDateString()===today);
-      const ag = [...new Set(reports.map(r=>r.agent).filter(Boolean))];
-      document.getElementById('kpi-today').textContent = tr.length;
-      document.getElementById('kpi-agents').textContent = ag.length;
+      document.getElementById('kpi-today').textContent = reports.filter(r=>r.timestamp&&new Date(r.timestamp).toDateString()===today).length;
+      document.getElementById('kpi-agents').textContent = [...new Set(reports.map(r=>r.agent).filter(Boolean))].length;
       document.getElementById('kpi-done').textContent = reports.filter(r=>['completed','done'].includes(r.status?.toLowerCase())).length;
       document.getElementById('kpi-progress').textContent = reports.filter(r=>['in_progress','in progress'].includes(r.status?.toLowerCase())).length;
     }
