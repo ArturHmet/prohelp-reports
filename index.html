@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProHelp — Team Operations Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563EB',
+            dark: '#0F172A',
+            card: '#1E293B',
+            border: '#334155',
+            accent: '#38BDF8',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0F172A; color: #E2E8F0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+    .badge-green { background: #064e3b; color: #34d399; }
+    .badge-blue { background: #1e3a5f; color: #60a5fa; }
+    .badge-yellow { background: #422006; color: #fbbf24; }
+    .badge-red { background: #4c0519; color: #f87171; }
+    .badge-gray { background: #1e293b; color: #94a3b8; }
+    .card { background: #1E293B; border: 1px solid #334155; border-radius: 12px; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .report-row:hover { background: #263548; }
+    .tab-active { border-bottom: 2px solid #2563EB; color: #60a5fa; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="border-b border-slate-700 sticky top-0 z-50" style="background: rgba(15,23,42,0.95); backdrop-filter: blur(12px);">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-sm">PH</div>
+        <span class="font-semibold text-lg">ProHelp</span>
+        <span class="text-slate-500 text-sm">/ Operations</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-xs text-green-400">
+          <div class="pulse-dot"></div>
+          <span>Live</span>
+        </div>
+        <span class="text-slate-500 text-sm" id="last-updated">Updating…</span>
+        <button onclick="loadReports()" class="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors">Refresh</button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="card p-4"><div class="text-xs text-slate-400 mb-1">Reports Today</div><div class="text-2xl font-bold" id="kpi-today">—</div></div>
+      <div class="card p-4"><div class="text-xs text-slate-400 mb-1">Active Agents</div><div class="text-2xl font-bold text-blue-400" id="kpi-agents">—</div></div>
+      <div class="card p-4"><div class="text-xs text-slate-400 mb-1">Tasks Completed</div><div class="text-2xl font-bold text-green-400" id="kpi-done">—</div></div>
+      <div class="card p-4"><div class="text-xs text-slate-400 mb-1">In Progress</div><div class="text-2xl font-bold text-yellow-400" id="kpi-progress">—</div></div>
+    </div>
+    <div class="flex gap-6 border-b border-slate-700 w-full mb-6">
+      <button onclick="setTab('all')" class="pb-2 text-sm font-medium tab-active" id="tab-all">All Reports</button>
+      <button onclick="setTab('ceo')" class="pb-2 text-sm font-medium text-slate-400 hover:text-slate-200" id="tab-ceo">CEO</button>
+      <button onclick="setTab('cmo')" class="pb-2 text-sm font-medium text-slate-400 hover:text-slate-200" id="tab-cmo">CMO</button>
+      <button onclick="setTab('cto')" class="pb-2 text-sm font-medium text-slate-400 hover:text-slate-200" id="tab-cto">CTO</button>
+      <button onclick="setTab('coo')" class="pb-2 text-sm font-medium text-slate-400 hover:text-slate-200" id="tab-coo">COO</button>
+    </div>
+    <div class="mb-6">
+      <input id="search-input" oninput="filterReports()" type="text" placeholder="Search reports, agents, tasks…" class="w-full md:w-96 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+    </div>
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-700">
+              <th class="text-left px-6 py-3 text-slate-400 font-medium text-xs uppercase tracking-wider">Agent</th>
+              <th class="text-left px-6 py-3 text-slate-400 font-medium text-xs uppercase tracking-wider">Report</th>
+              <th class="text-left px-6 py-3 text-slate-400 font-medium text-xs uppercase tracking-wider">Status</th>
+              <th class="text-left px-6 py-3 text-slate-400 font-medium text-xs uppercase tracking-wider">Priority</th>
+              <th class="text-left px-6 py-3 text-slate-400 font-medium text-xs uppercase tracking-wider">Time</th>
+            </tr>
+          </thead>
+          <tbody id="reports-body">
+            <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500 text-sm">Loading reports…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div id="detail-drawer" class="hidden fixed inset-0 z-50" onclick="closeDrawer(event)">
+      <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+      <div class="absolute right-0 top-0 h-full w-full md:w-[520px] bg-slate-900 border-l border-slate-700 overflow-y-auto p-6" onclick="event.stopPropagation()">
+        <button onclick="closeDrawer()" class="mb-6 text-slate-400 hover:text-white text-sm flex items-center gap-2">← Back</button>
+        <div id="drawer-content"></div>
+      </div>
+    </div>
+    <div id="empty-state" class="hidden text-center py-16 text-slate-500">
+      <div class="text-4xl mb-3">📊</div>
+      <div class="font-medium text-slate-400 mb-1">No reports yet</div>
+      <div class="text-xs">Team agents will post updates here automatically</div>
+    </div>
+  </main>
+  <script>
+    const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+    const SHEET_NAME = 'Reports';
+    const API_KEY = 'YOUR_GOOGLE_API_KEY_HERE';
+    let allReports = [];
+    let currentTab = 'all';
+    const statusColors = { 'completed': 'badge-green', 'done': 'badge-green', 'in_progress': 'badge-blue', 'in progress': 'badge-blue', 'pending': 'badge-yellow', 'blocked': 'badge-red', 'failed': 'badge-red' };
+    const priorityColors = { 'critical': 'badge-red', 'high': 'badge-yellow', 'medium': 'badge-blue', 'low': 'badge-gray' };
+    async function loadReports() {
+      document.getElementById('last-updated').textContent = 'Updating…';
+      try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Sheet not found');
+        const data = await res.json();
+        const rows = data.values || [];
+        if (rows.length < 2) { showEmpty(); return; }
+        const headers = rows[0].map(h => h.toLowerCase().trim());
+        allReports = rows.slice(1).map(row => { const obj = {}; headers.forEach((h, i) => obj[h] = row[i] || ''); return obj; }).reverse();
+        renderReports(allReports); updateKPIs(allReports);
+        document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        showDemoData();
+        document.getElementById('last-updated').textContent = 'Demo mode';
+      }
+    }
+    function showDemoData() {
+      allReports = [
+        { timestamp: new Date().toISOString(), agent: 'CEO', title: 'Sprint-001 closed successfully', summary: 'All 4 directives executed. Brand: ProHelp confirmed.', status: 'completed', priority: 'high', details: 'Sprint-001 cycle complete. COO brief filed. sprint-008 gated to 50-provider milestone.' },
+        { timestamp: new Date(Date.now()-3600000).toISOString(), agent: 'CMO', title: 'Marketing strategy for prohelp.work', summary: 'SEO audit started. Landing page copy drafted.', status: 'in_progress', priority: 'high', details: 'Keyword research complete. Competitor analysis done.' },
+        { timestamp: new Date(Date.now()-7200000).toISOString(), agent: 'CTO', title: 'Tech stack selection complete', summary: 'Recommended: Next.js + Supabase + Stripe.', status: 'completed', priority: 'critical', details: 'Full open-source stack. MVP timeline: 3 weeks.' },
+        { timestamp: new Date(Date.now()-10800000).toISOString(), agent: 'COO', title: 'Onboarding framework ready', summary: 'Provider onboarding SOP created.', status: 'pending', priority: 'medium', details: 'Pending COO assignment on May 1.' },
+      ];
+      renderReports(allReports); updateKPIs(allReports);
+    }
+    function renderReports(reports) {
+      const body = document.getElementById('reports-body');
+      const filtered = currentTab === 'all' ? reports : reports.filter(r => r.agent?.toLowerCase() === currentTab);
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const shown = search ? filtered.filter(r => JSON.stringify(r).toLowerCase().includes(search)) : filtered;
+      if (!shown.length) { body.innerHTML = ''; document.getElementById('empty-state').classList.remove('hidden'); return; }
+      document.getElementById('empty-state').classList.add('hidden');
+      body.innerHTML = shown.map((r, i) => {
+        const sc = statusColors[r.status?.toLowerCase()] || 'badge-gray';
+        const pc = priorityColors[r.priority?.toLowerCase()] || 'badge-gray';
+        return `<tr class="report-row border-b border-slate-700/50 cursor-pointer transition-colors" onclick="openDrawer(${i})">
+          <td class="px-6 py-4"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full bg-blue-900 flex items-center justify-center text-xs font-bold text-blue-300">${(r.agent||'?')[0]}</div><span class="font-medium text-slate-300">${r.agent||'—'}</span></div></td>
+          <td class="px-6 py-4"><div class="font-medium text-slate-200 mb-0.5">${r.title||'—'}</div><div class="text-xs text-slate-500 truncate max-w-xs">${r.summary||''}</div></td>
+          <td class="px-6 py-4"><span class="badge ${sc}">${r.status||'—'}</span></td>
+          <td class="px-6 py-4"><span class="badge ${pc}">${r.priority||'—'}</span></td>
+          <td class="px-6 py-4 text-slate-400 text-xs whitespace-nowrap">${r.timestamp?formatTime(r.timestamp):'—'}</td>
+        </tr>`;
+      }).join('');
+    }
+    function openDrawer(i) {
+      const reports = currentTab==='all'?allReports:allReports.filter(r=>r.agent?.toLowerCase()===currentTab);
+      const r = reports[i]; if(!r) return;
+      const sc = statusColors[r.status?.toLowerCase()]||'badge-gray';
+      document.getElementById('drawer-content').innerHTML = `<div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center text-sm font-bold text-blue-300">${(r.agent||'?')[0]}</div><div><div class="font-semibold text-slate-200">${r.agent||'—'}</div><div class="text-xs text-slate-500">${r.timestamp?new Date(r.timestamp).toLocaleString():''}</div></div></div><h2 class="text-xl font-bold text-white mb-3">${r.title||'—'}</h2><div class="flex gap-2 mb-5"><span class="badge ${sc}">${r.status||'—'}</span><span class="badge ${priorityColors[r.priority?.toLowerCase()]||'badge-gray'}">${r.priority||'—'}</span></div><div class="text-slate-300 text-sm leading-relaxed mb-6">${r.summary||''}</div>${r.details?`<div class="card p-4 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">${r.details}</div>`:''}`;
+      document.getElementById('detail-drawer').classList.remove('hidden');
+    }
+    function closeDrawer(e) { if(!e||e.target===document.getElementById('detail-drawer')) document.getElementById('detail-drawer').classList.add('hidden'); }
+    function updateKPIs(reports) {
+      const today = new Date().toDateString();
+      const tr = reports.filter(r=>r.timestamp&&new Date(r.timestamp).toDateString()===today);
+      const ag = [...new Set(reports.map(r=>r.agent).filter(Boolean))];
+      document.getElementById('kpi-today').textContent = tr.length;
+      document.getElementById('kpi-agents').textContent = ag.length;
+      document.getElementById('kpi-done').textContent = reports.filter(r=>['completed','done'].includes(r.status?.toLowerCase())).length;
+      document.getElementById('kpi-progress').textContent = reports.filter(r=>['in_progress','in progress'].includes(r.status?.toLowerCase())).length;
+    }
+    function setTab(t) {
+      currentTab=t;
+      ['all','ceo','cmo','cto','coo'].forEach(x=>{ const el=document.getElementById('tab-'+x); el.className=x===t?'pb-2 text-sm font-medium tab-active':'pb-2 text-sm font-medium text-slate-400 hover:text-slate-200'; });
+      renderReports(allReports);
+    }
+    function filterReports() { renderReports(allReports); }
+    function formatTime(ts) { const d=new Date(ts),now=new Date(),diff=Math.floor((now-d)/1000); if(diff<60) return 'just now'; if(diff<3600) return Math.floor(diff/60)+'m ago'; if(diff<86400) return Math.floor(diff/3600)+'h ago'; return d.toLocaleDateString(); }
+    function showEmpty() { document.getElementById('reports-body').innerHTML=''; document.getElementById('empty-state').classList.remove('hidden'); }
+    loadReports();
+    setInterval(loadReports, 300000);
+  </script>
+</body>
+</html>
