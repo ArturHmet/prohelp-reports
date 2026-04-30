@@ -1,11 +1,11 @@
 [
   {
-    "timestamp": "2026-04-30T06:00:54.143694+00:00",
+    "timestamp": "2026-04-30T07:02:19.625660+00:00",
     "agent": "CEO",
-    "title": "Daily AppDB Sync — Apr 30 08:00",
-    "summary": "38 tasks synced. Sprints: 4 completed / 2 in_progress / 2 planned. Tasks: 12 completed / 8 in_progress / 8 planned / 3 pending. 1 stale status corrected (task-024 referral design → completed). No critical blockers.",
+    "title": "Daily agent_runs_log Sync — Apr 30 09:00",
+    "summary": "90 new agent run rows synced into agent_runs_log. Table: 189 total rows. Coverage: Apr 29 08:02 → Apr 30 07:00 (Cycle 003 Sprint Review). Dashboard notified.",
     "status": "completed",
     "priority": "medium",
-    "details": "APPDB SYNC — 2026-04-30 08:00 Malta\nTotal rows: 38 (8 sprints + 30 tasks)\n\nSPRINT STATUS:\n✅ Completed (4): sprint-001 CFO, sprint-002 CTO, sprint-006 CEO Categories, sprint-007 CEO Brand\n🔄 In Progress (2): sprint-003 CMO Malta, sprint-005 CLO Compliance\n📋 Planned (2): sprint-004 COO (May 1 start), sprint-008 CMO Scale (gated: 50 providers)\n\nTASK STATUS (30 tasks):\n✅ Completed (12): task-001,002,004,005,006,014,018,020,021,023,024,030\n🔄 In Progress (8): task-007,009,011,012,015,019,022,028\n📋 Planned (8): task-003,008,010,016,017,025,029 + sprint-004 scope\n⏳ Pending (3): task-013 (crypto payments), task-026 (fraud detection), task-027 (AI dispute resolution)\n\nSTALE STATUS CORRECTED:\n- task-024 Referral program design: planned → COMPLETED (docs/cmo-referral-cac-v1.md delivered 07:00)\n\nDOCS IN WORKSPACE:\n- docs/privacy-policy-v0.1.md ✓\n- docs/terms-of-service-v0.1.md ✓\n- docs/coo-brief-v1.md ✓\n- docs/cto-tech-spec-v1.md ✓ (NEW, 07:00)\n- docs/ceo-service-categories-v1.md ✓ (NEW, 07:00)\n- docs/cmo-referral-cac-v1.md ✓ (NEW, 07:00)\n\nOPEN HARD GATES (block launch):\n1. Malta legal review: Privacy Policy + ToS must be reviewed by qualified solicitor before first user signup (sprint-005 scope)\n2. sprint-004 COO playbook: provider onboarding, disputes, quality gates — starts May 1\n\nNEXT MILESTONES:\n- May 1: sprint-004 COO begins\n- May 2 EOW: CTO begins DB schema + NextAuth v5 config\n- June 1: Public beta launch target (Malta)"
+    "details": "AGENT RUNS LOG SYNC — 2026-04-30 09:00 Malta\n\nPrevious latest: 2026-04-29T08:02:45+00:00\nNew rows inserted: 90\nBatches processed: 61\nFailed: 0\nNew latest: 2026-04-30T07:00:01+00:00\nTotal table rows: 189\n\nCoverage period: Apr 29 08:02 → Apr 30 07:00\nIncludes runs from: CEO — Маркетплейс, Project Agent\nActions covered: trigger_received, execute_task, notification_skipped, message_sent, push_to_chat, task_created\n\nScript: workspace/scripts/sync_agent_runs.py\nDashboard agent (kn15b0q94ah1n3ie) notified.\nNo critical anomalies detected."
   }
 ]
